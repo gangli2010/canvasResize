@@ -310,10 +310,10 @@
                     methods.transformCoordinate(canvas, width, height, orientation);
 
                     // over image size
-                    if (methods.detectSubsampling(img)) {
-                        iw /= 2;
-                        ih /= 2;
-                    }
+                    var subsampleFactor = methods.detectSubsampling(img);
+                    iw /= subsampleFactor;
+                    ih /= subsampleFactor;
+                    
                     var d = maxSquareSize; // size of tiling canvas
                     var tmpCanvas = document.createElement('canvas');
                     tmpCanvas.width = tmpCanvas.height = d;
