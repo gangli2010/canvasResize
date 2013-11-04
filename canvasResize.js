@@ -21,6 +21,37 @@
 (function($) {
     var pluginName = 'canvasResize',
             methods = {
+                keepRatio: function(w, h, M){
+         var max = Math.max(w, h);
+         var min = Math.min(w, h);
+         var w_=0;
+         var h_=0;
+         var ratio = min/max;
+         if (max <= M)
+         {
+             w_ = w;
+             h_ = h;
+         }
+         else
+         {
+            max = M;
+            min = max * ratio;
+            if(w >= h)
+            {
+                w_ = max;
+                h_ = min;
+            }
+            else
+            {
+                w_ = min;
+                h_ = max;
+            }
+         }
+            return {
+                'width': w_,
+                'height': h_
+            };
+        },
         newsize: function(w, h, W, H, C) {
             var c = C ? 'h' : '';
             if ((W && w > W) || (H && h > H)) {
@@ -65,23 +96,29 @@
                 return bb;
             }
         },
-        /**
+       /**
          * Detect subsampling in loaded image.
          * In iOS, larger images than 2M pixels may be subsampled in rendering.
          */
         detectSubsampling: function(img) {
             var iw = img.width, ih = img.height;
-            if (iw * ih > 1048576) { // subsampling may happen over megapixel image
-                var canvas = document.createElement('canvas');
-                canvas.width = canvas.height = 1;
-                var ctx = canvas.getContext('2d');
-                ctx.drawImage(img, -iw + 1, 0);
-                // subsampled image becomes half smaller in rendering size.
-                // check alpha channel value to confirm image is covering edge pixel or not.
-                // if alpha value is 0 image is not covering, hence subsampled.
-                return ctx.getImageData(0, 0, 1, 1).data[3] === 0;
-            } else {
-                return false;
+            var canvas = document.createElement('canvas');
+            canvas.width = canvas.height = 1;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, -iw + 1, 0);
+            var alpha = ctx.getImageData(0, 0, 1, 1).data[3];
+            // subsampled image becomes half smaller in rendering size.
+            // check alpha channel value to confirm image is covering edge pixel or not.
+            // if alpha value is 0 image is not covering, hence subsampled.
+            if (iw * ih >= 4585*4585)
+            {
+                return (alpha === 0 || alpha === 255) ? 4 : 1;
+            }
+            else if (iw * ih > 1048576) { // subsampling may happen over megapixel image
+                return (alpha === 0 || alpha === 255) ? 2 : 1;
+            }
+            else {
+                return 1;
             }
         },
         /**
@@ -227,6 +264,8 @@
     defaults = {
         width: 300,
         height: 0,
+        keepRatio: true,
+        maxSquareSize: 1024,
         crop: false,
         quality: 80,
         rotate: 0,
@@ -278,7 +317,7 @@
                         iw /= 2;
                         ih /= 2;
                     }
-                    var d = 1024; // size of tiling canvas
+                    var d = maxSquareSize; // size of tiling canvas
                     var tmpCanvas = document.createElement('canvas');
                     tmpCanvas.width = tmpCanvas.height = d;
                     var tmpCtx = tmpCanvas.getContext('2d');
