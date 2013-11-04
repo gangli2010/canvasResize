@@ -96,12 +96,13 @@
                 return bb;
             }
         },
-       /**
+        /**
          * Detect subsampling in loaded image.
          * In iOS, larger images than 2M pixels may be subsampled in rendering.
          */
         detectSubsampling: function(img) {
             var iw = img.width, ih = img.height;
+            if (iw * ih <= 1048576) return 1;
             var canvas = document.createElement('canvas');
             canvas.width = canvas.height = 1;
             var ctx = canvas.getContext('2d');
@@ -110,16 +111,12 @@
             // subsampled image becomes half smaller in rendering size.
             // check alpha channel value to confirm image is covering edge pixel or not.
             // if alpha value is 0 image is not covering, hence subsampled.
-            if (iw * ih >= 4585*4585)
+            if (iw * ih >= 4585*4585)// subsampling may happen over megapixel image
             {
                 return (alpha === 0 || alpha === 255) ? 4 : 1;
             }
-            else if (iw * ih > 1048576) { // subsampling may happen over megapixel image
+            else
                 return (alpha === 0 || alpha === 255) ? 2 : 1;
-            }
-            else {
-                return 1;
-            }
         },
         /**
          * Update the orientation according to the specified rotation angle
